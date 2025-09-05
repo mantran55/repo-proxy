@@ -1,20 +1,39 @@
+// server.js  ✅ phiên bản OK cho Render
 const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-
+const fetch = require('node-fetch');          // v2
 const app = express();
-app.use(cors()); // cho phép mọi origin (hoặc cors({ origin: 'https://<username>.github.io' }))
-app.use(express.text({ type: '*/*' })); // nhận text/plain|json
 
-// Thay bằng Web App URL (đuôi /exec) của bạn:
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxVNB13AYRoEw0m1oYG4Pwu7876-vZzQyLLYU8zcmdHiDvKJgx7tfwOpPHrJnc1vdGF8g/exec';
+// --- CONFIG ---
+const ALLOW_ORIGIN = ['http://127.0.0.1:5500', 'http://localhost:5500', 'https://<username>.github.io']; // thêm domain FE
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxVNB13AYRoEw0m1oYG4Pwu7876-vZzQyLLYU8zcmdHiDvKJgx7tfwOpPHrJnc1vdGF8g/exec'; // /exec
 
-app.post('/api', async (req, res) => {
+// middlewares
+app.use(express.text({ type: '*/*' }));       // nhận text/plain|json
+
+// CORS cho mọi request (kể cả OPTIONS)
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '';
+  const allow = ALLOW_ORIGIN.includes(origin) ? origin : '*';
+  res.setHeader('Access-Control-Allow-Origin', allow);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Nếu chỉ định allow != '*' và cần cookie -> thêm: res.setHeader('Access-Control-Allow-Credentials','true');
+
+  if (req.method === 'OPTIONS') {
+    // Trả ngay cho preflight
+    return res.status(204).end();
+  }
+  next();
+});
+
+// handler chung
+async function forward(req, res) {
   const path = req.query.path || '';
   try {
     const r = await fetch(`${GAS_URL}?path=${encodeURIComponent(path)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh preflight
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh preflight ở bước sau
       body: req.body || '{}'
     });
     const text = await r.text();
@@ -22,7 +41,11 @@ app.post('/api', async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok:false, message:String(e) });
   }
-});
+}
+
+// chấp nhận cả "/" và "/api"
+app.post('/', forward);
+app.post('/api', forward);
 
 const port = process.env.PORT || 3001;
-app.listen(port, ()=> console.log(`Proxy on :${port}`));
+app.listen(port, () => console.log(`Proxy running on :${port}`));
