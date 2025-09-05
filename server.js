@@ -5,7 +5,7 @@ const app = express();
 
 // --- CONFIG ---
 const ALLOW_ORIGIN = ['http://127.0.0.1:5500', 'http://localhost:5500', 'https://<username>.github.io']; // thêm domain FE
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyQkjR1zEYnxnC32eKbfc2oOQq-Jx9sUqexecsSnSdVVh3C0hdyUzGmP3MUFHjW5Oa1vg/exec'; // /exec
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzu4Yy4BzWMnVXU7dtDA6f-_uIdOHENFhho_UA81vm4c_KU1-JUE6tBp9WAeQUsRZbSKQ/exec'; // /exec
 
 // middlewares
 app.use(express.text({ type: '*/*' }));       // nhận text/plain|json
@@ -49,6 +49,7 @@ app.post('/api', forward);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`Proxy running on :${port}`));
+
 
 
 
